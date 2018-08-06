@@ -47,6 +47,15 @@ ZEND_TSRMLS_CACHE_EXTERN()
 
 #endif
 
+#define HASHMAP_PROPERTY "list"
+#define HASHMAP_EXISTS_METHOD "exists"
+
+PHP_METHOD(hashmap, __construct);
+PHP_METHOD(hashmap, put);
+PHP_METHOD(hashmap, get);
+PHP_METHOD(hashmap, exists);
+PHP_METHOD(hashmap, remove);
+
 
 /*
  * Local variables:

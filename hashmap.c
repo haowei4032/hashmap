@@ -7,15 +7,6 @@
 #include "ext/standard/info.h"
 #include "php_hashmap.h"
 
-#define HASHMAP_PROPERTY "list"
-#define HASHMAP_EXISTS_METHOD "exists"
-
-PHP_METHOD(hashmap, __construct);
-PHP_METHOD(hashmap, put);
-PHP_METHOD(hashmap, get);
-PHP_METHOD(hashmap, exists);
-PHP_METHOD(hashmap, remove);
-
 static zend_class_entry *hashmap_ce, ce;
 
 static zend_function_entry hashmap_functions[] = {
