@@ -8,7 +8,6 @@
 #include "php_hashmap.h"
 
 static zend_class_entry *hashmap_ce, ce;
-
 static zend_function_entry hashmap_functions[] = {
 	PHP_FE_END
 };
