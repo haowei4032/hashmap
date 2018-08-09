@@ -12,11 +12,19 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Author:                                                              |
+  | Author: eastwood<boss@haowei.me>                                     |
   +----------------------------------------------------------------------+
 */
 
 /* $Id$ */
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include "php.h"
+#include "php_ini.h"
+#include <ext/standard/info.h>
 
 #ifndef PHP_HASHMAP_H
 #define PHP_HASHMAP_H
@@ -47,8 +55,9 @@ ZEND_TSRMLS_CACHE_EXTERN()
 
 #endif
 
-#define HASHMAP_PROPERTY "list"
-#define HASHMAP_EXISTS_METHOD "exists"
+#define HASHMAP_CLASS_PROPERTY      "list"
+#define HASHMAP_CLASS_NAME          "EastWood\\Helper\\HashMap"
+#define HASHMAP_CLASS_ALIAS_NAME    "HashMap"
 
 PHP_METHOD(hashmap, __construct);
 PHP_METHOD(hashmap, put);

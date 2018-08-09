@@ -1,10 +1,23 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+/*
+  +----------------------------------------------------------------------+
+  | PHP Version 7                                                        |
+  +----------------------------------------------------------------------+
+  | Copyright (c) 1997-2018 The PHP Group                                |
+  +----------------------------------------------------------------------+
+  | This source file is subject to version 3.01 of the PHP license,      |
+  | that is bundled with this package in the file LICENSE, and is        |
+  | available through the world-wide-web at the following url:           |
+  | http://www.php.net/license/3_01.txt                                  |
+  | If you did not receive a copy of the PHP license and are unable to   |
+  | obtain it through the world-wide-web, please send a note to          |
+  | license@php.net so we can mail you a copy immediately.               |
+  +----------------------------------------------------------------------+
+  | Author: eastwood<boss@haowei.me>                                     |
+  +----------------------------------------------------------------------+
+*/
 
-#include "php.h"
-#include "php_ini.h"
-#include "ext/standard/info.h"
+/* $Id$ */
+
 #include "php_hashmap.h"
 
 static zend_class_entry *hashmap_ce, ce;
@@ -21,11 +34,24 @@ static zend_function_entry hashmap_methods[] = {
 	PHP_FE_END
 };
 
+static zend_bool hashmap_key_exists(INTERNAL_FUNCTION_PARAMETERS)
+{
+	zend_string *key;
+	zval *property;
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S", &key) == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	//php_printf("%s\n", ZSTR_VAL(key));
+	property = zend_read_property(hashmap_ce, getThis(), ZEND_STRL(HASHMAP_CLASS_PROPERTY), 1, NULL);
+	RETURN_BOOL(zend_hash_exists(Z_ARRVAL_P(property), key));
+}
+
 PHP_METHOD(hashmap, __construct)
 {
 	zval init;
 	array_init(&init);
-	zend_update_property(hashmap_ce, getThis(), ZEND_STRL(HASHMAP_PROPERTY), &init);
+	zend_update_property(hashmap_ce, getThis(), ZEND_STRL(HASHMAP_CLASS_PROPERTY), &init);
 	zval_ptr_dtor(&init);
 }
 
@@ -37,12 +63,11 @@ PHP_METHOD(hashmap, put)
 		RETURN_FALSE;
 	}
 
-	property = zend_read_property(hashmap_ce, getThis(), ZEND_STRL(HASHMAP_PROPERTY), 1, NULL);
+	property = zend_read_property(hashmap_ce, getThis(), ZEND_STRL(HASHMAP_CLASS_PROPERTY), 1, NULL);
 	if (zend_hash_update(Z_ARRVAL_P(property), key, value) != NULL) {
 		Z_TRY_ADDREF_P(value);
 		RETURN_TRUE;
 	}
-
 	RETURN_FALSE;
 }
 
@@ -54,34 +79,15 @@ PHP_METHOD(hashmap, get)
 		RETURN_FALSE;
 	}
 	
-	property = zend_read_property(hashmap_ce, getThis(), ZEND_STRL(HASHMAP_PROPERTY), 1, NULL);
-	HashTable *ht = Z_ARRVAL_P(property);
-
-	zval param[1];
-	ZVAL_STRING(&param[0], ZSTR_VAL(key));
-	zval function;
-	ZVAL_STRING(&function, HASHMAP_EXISTS_METHOD);
-	call_user_function(NULL, getThis(), &function, &value, 1, param TSRMLS_CC);
-	//int status = call_user_function(NULL, getThis(), &function, &value, 1, param TSRMLS_CC);
-	//php_printf("status: %d; success: %d; failure: %d\n", status, SUCCESS, FAILURE);
-	//php_printf("value: %d\n", Z_TYPE_P(&value) == IS_TRUE ? 1 : 0);
-	zval_ptr_dtor(param);
-	if (Z_TYPE_P(&value) == IS_FALSE) RETURN_NULL();
-
-	RETURN_ZVAL(zend_hash_find(ht, key), 1, 0);
+	property = zend_read_property(hashmap_ce, getThis(), ZEND_STRL(HASHMAP_CLASS_PROPERTY), 1, NULL);
+	if (!hashmap_key_exists(INTERNAL_FUNCTION_PARAM_PASSTHRU)) RETURN_NULL();
+	
+	RETURN_ZVAL(zend_hash_find(Z_ARRVAL_P(property), key), 1, 0);
 }
 
 PHP_METHOD(hashmap, exists)
 {
-	zend_string *key;
-	zval *property;
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S", &key) == FAILURE) {
-		RETURN_FALSE;
-	}
-
-	property = zend_read_property(hashmap_ce, getThis(), ZEND_STRL(HASHMAP_PROPERTY), 1, NULL);
-	HashTable *ht = Z_ARRVAL_P(property);
-	RETURN_BOOL(zend_hash_exists(ht, key));
+	hashmap_key_exists(INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 
 PHP_METHOD(hashmap, remove)
@@ -91,25 +97,17 @@ PHP_METHOD(hashmap, remove)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S", &key) == FAILURE) {
 		RETURN_FALSE;
 	}
-
-	zval param[1];
-	ZVAL_STRING(&param[0], ZSTR_VAL(key));
-	zval function;
-	ZVAL_STRING(&function, HASHMAP_EXISTS_METHOD);
-	call_user_function(NULL, getThis(), &function, &value, 1, param TSRMLS_CC);
-	zval_ptr_dtor(param);
-	if (Z_TYPE_P(&value) == IS_FALSE) RETURN_FALSE;
-
-	property = zend_read_property(hashmap_ce, getThis(), ZEND_STRL(HASHMAP_PROPERTY), 1, NULL);
-	HashTable *ht = Z_ARRVAL_P(property);
-	RETURN_BOOL(zend_hash_del(ht, key) == SUCCESS ? 1 : 0);
+	if (!hashmap_key_exists(INTERNAL_FUNCTION_PARAM_PASSTHRU)) RETURN_FALSE;
+	property = zend_read_property(hashmap_ce, getThis(), ZEND_STRL(HASHMAP_CLASS_PROPERTY), 1, NULL);
+	RETURN_BOOL(zend_hash_del(Z_ARRVAL_P(property), key) == SUCCESS ? 1 : 0);
 }
 
 PHP_MINIT_FUNCTION(hashmap)
 {
-	INIT_CLASS_ENTRY(ce, "HashMap", hashmap_methods);
+	INIT_CLASS_ENTRY(ce, HASHMAP_CLASS_NAME, hashmap_methods);
 	hashmap_ce = zend_register_internal_class(&ce TSRMLS_CC);
-	zend_declare_property_null(hashmap_ce, ZEND_STRL(HASHMAP_PROPERTY), ZEND_ACC_PRIVATE);
+	zend_register_class_alias(HASHMAP_CLASS_ALIAS_NAME, hashmap_ce);
+	zend_declare_property_null(hashmap_ce, ZEND_STRL(HASHMAP_CLASS_PROPERTY), ZEND_ACC_PRIVATE);
 	return SUCCESS;
 }
 
@@ -136,6 +134,8 @@ PHP_MINFO_FUNCTION(hashmap)
 {
 	php_info_print_table_start();
 	php_info_print_table_header(2, "hashmap support", "enabled");
+	php_info_print_table_row(2, "hashmap version", PHP_HASHMAP_VERSION);
+	php_info_print_table_row(2, "hashmap author", "eastwood<boss@haowei.me>");
 	php_info_print_table_end();
 }
 
@@ -159,3 +159,12 @@ ZEND_TSRMLS_CACHE_DEFINE()
 ZEND_GET_MODULE(hashmap)
 #endif
 
+
+/*
+ * Local variables:
+ * tab-width: 4
+ * c-basic-offset: 4
+ * End:
+ * vim600: noet sw=4 ts=4 fdm=marker
+ * vim<600: noet sw=4 ts=4
+ */
