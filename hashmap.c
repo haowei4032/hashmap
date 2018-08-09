@@ -30,9 +30,21 @@ static zend_function_entry hashmap_methods[] = {
 	PHP_ME(hashmap, put, NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(hashmap, get, NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(hashmap, exists, NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(hashmap, size, NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(hashmap, keys, NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(hashmap, values, NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(hashmap, clear, NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(hashmap, remove, NULL, ZEND_ACC_PUBLIC)
 	PHP_FE_END
 };
+
+static void hashmap_init(zval *obj)
+{
+	zval init;
+	array_init_size(&init, 0);
+	zend_update_property(hashmap_ce, obj, ZEND_STRL(HASHMAP_CLASS_PROPERTY), &init);
+	zval_ptr_dtor(&init);
+}
 
 static zend_bool hashmap_key_exists(INTERNAL_FUNCTION_PARAMETERS)
 {
@@ -42,17 +54,13 @@ static zend_bool hashmap_key_exists(INTERNAL_FUNCTION_PARAMETERS)
 		RETURN_FALSE;
 	}
 
-	//php_printf("%s\n", ZSTR_VAL(key));
 	property = zend_read_property(hashmap_ce, getThis(), ZEND_STRL(HASHMAP_CLASS_PROPERTY), 1, NULL);
 	RETURN_BOOL(zend_hash_exists(Z_ARRVAL_P(property), key));
 }
 
 PHP_METHOD(hashmap, __construct)
 {
-	zval init;
-	array_init(&init);
-	zend_update_property(hashmap_ce, getThis(), ZEND_STRL(HASHMAP_CLASS_PROPERTY), &init);
-	zval_ptr_dtor(&init);
+	hashmap_init(getThis());
 }
 
 PHP_METHOD(hashmap, put)
@@ -71,6 +79,62 @@ PHP_METHOD(hashmap, put)
 	RETURN_FALSE;
 }
 
+PHP_METHOD(hashmap, size)
+{
+	zval *property;
+	property = zend_read_property(hashmap_ce, getThis(), ZEND_STRL(HASHMAP_CLASS_PROPERTY), 1, NULL);
+	RETURN_LONG(zend_hash_num_elements(Z_ARRVAL_P(property)));
+}
+
+PHP_METHOD(hashmap, clear)
+{
+	hashmap_init(getThis());
+	RETURN_BOOL(1);
+}
+
+PHP_METHOD(hashmap, keys)
+{
+	zend_string *str_key;
+	zval *property = zend_read_property(hashmap_ce, getThis(), ZEND_STRL(HASHMAP_CLASS_PROPERTY), 1, NULL);
+	zend_array *array = Z_ARRVAL_P(property);
+	zend_ulong num_key;
+	zend_long length = zend_hash_num_elements(array);
+	if (!length) {
+		ZVAL_EMPTY_ARRAY(return_value);
+		return;
+	}
+
+	zval zv;
+	array_init(return_value);
+	ZEND_HASH_FOREACH_KEY(array, num_key, str_key) {
+		if (str_key) {
+			ZVAL_STR_COPY(&zv, str_key);
+		}else{
+			ZVAL_LONG(&zv, num_key);
+		}
+		add_next_index_zval(return_value, &zv);
+	} ZEND_HASH_FOREACH_END();
+
+}
+
+PHP_METHOD(hashmap, values)
+{
+	zval *entry;
+	zval *property = zend_read_property(hashmap_ce, getThis(), ZEND_STRL(HASHMAP_CLASS_PROPERTY), 1, NULL);
+	zend_array *array = Z_ARRVAL_P(property); 
+	zend_long length = zend_hash_num_elements(array);
+	if (!length) {
+		ZVAL_EMPTY_ARRAY(return_value);
+		return;
+	}
+
+	array_init(return_value);
+	ZEND_HASH_FOREACH_VAL(array, entry) {
+		Z_TRY_ADDREF_P(entry);
+		add_next_index_zval(return_value, entry);
+	} ZEND_HASH_FOREACH_END();
+}
+
 PHP_METHOD(hashmap, get)
 {
 	zend_string *key;
@@ -81,7 +145,7 @@ PHP_METHOD(hashmap, get)
 	
 	property = zend_read_property(hashmap_ce, getThis(), ZEND_STRL(HASHMAP_CLASS_PROPERTY), 1, NULL);
 	if (!hashmap_key_exists(INTERNAL_FUNCTION_PARAM_PASSTHRU)) RETURN_NULL();
-	
+
 	RETURN_ZVAL(zend_hash_find(Z_ARRVAL_P(property), key), 1, 0);
 }
 

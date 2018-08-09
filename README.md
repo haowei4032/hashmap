@@ -49,6 +49,26 @@ class HashMap
      * @return bool 
      */
     public function remove($key) {}
+
+    /**
+     * @return long 
+     */
+    public function size() {}
+
+    /**
+     * @return long 
+     */
+    public function clear() {}
+
+    /**
+     * @return array 
+     */
+    public function keys() {}
+
+    /**
+     * @return array 
+     */
+    public function values() {}
 }
 
 ```

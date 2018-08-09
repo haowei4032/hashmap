@@ -63,6 +63,10 @@ PHP_METHOD(hashmap, __construct);
 PHP_METHOD(hashmap, put);
 PHP_METHOD(hashmap, get);
 PHP_METHOD(hashmap, exists);
+PHP_METHOD(hashmap, size);
+PHP_METHOD(hashmap, clear);
+PHP_METHOD(hashmap, keys);
+PHP_METHOD(hashmap, values);
 PHP_METHOD(hashmap, remove);
 
 
