@@ -100,7 +100,7 @@ PHP_METHOD(hashmap, keys)
 	zend_ulong num_key;
 	zend_long length = zend_hash_num_elements(array);
 	if (!length) {
-		ZVAL_EMPTY_ARRAY(return_value);
+		array_init_size(return_value, 0);
 		return;
 	}
 
@@ -124,7 +124,7 @@ PHP_METHOD(hashmap, values)
 	zend_array *array = Z_ARRVAL_P(property); 
 	zend_long length = zend_hash_num_elements(array);
 	if (!length) {
-		ZVAL_EMPTY_ARRAY(return_value);
+		array_init_size(return_value, 0);
 		return;
 	}
 
